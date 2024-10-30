@@ -1,0 +1,18 @@
+{
+    "Mouth": [9,10],
+    "Left_Eye": [1,2,3],
+    "Right_Eye": [4,5,6],
+    "Nose": [0],
+    "Left_ear": [7],
+    "Right_ear": [8],
+    "Arm_Left": [11,13,15],
+    "Arm_Right": [12,14,16],
+    "Wrist_Left": [13,15,17,19,21],
+    "Wrist_Right": [14,16,18,20,22],
+    "Upper_Body_Left": [11,23,25],
+    "Upper_Body_Right": [12,24,26],
+    "Lower_Body_Left": [23,25,27],
+    "Lower_Body_Right": [24,26,28],
+    "Foot_Left": [27,29,31],
+    "Foot_Right": [28,30,32]
+}
