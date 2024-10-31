@@ -208,6 +208,8 @@ class TimesNet(BaseDeepAD):
         """define forward step in inference"""
         class_infer_loader = self.inference_prepare(X = reshape_X, weight = weight)
         self.net.eval()
+        
+        prediction_li = []
         with torch.no_grad():
             for idx, batch_x in enumerate(class_infer_loader):
                 batch_x = batch_x.float().to(self.device)
@@ -221,7 +223,11 @@ class TimesNet(BaseDeepAD):
                 elif self.c_out > 1: # for multi-label class classification
                     prob = torch.sigmoid(outputs).squeeze(1).detach().cpu().numpy()
                     pred = (prob >= thr).astype(int)
-                return pred
+                    
+                prediction_li.append(pred)
+        # (iteration, B, Feature) -> (iteration*B, Feature)
+        prediction_li = np.vstack(prediction_li)  # (배치 수, 피쳐 수)
+        return prediction_li
     
     def training_forward(self, batch_x, net, criterion):
         """define forward step in training"""

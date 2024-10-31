@@ -22,7 +22,6 @@
 
 ### Installation
 ```bash
-%cd detection
 conda create -n dyskinesia python=3.8
 conda activate dyskinesia
 pip install -r config/setup/eiden.txt
@@ -34,20 +33,16 @@ pip install -r config/setup/eiden.txt
 
 ### Usage 
 ```bash
-%cd detection
-python runner.py --input_data_path {input_data_path} \
+python detection.py --input_data_path {input_data_path} \
     --guide_book_path="configs/mediapipe_pose_guide.json" \
     --mm_model_path="config/weight/pose_landmarker_heavy.task" \
     --detect_model_path="config/weight/mult_label_classifier.pth"
 ```
 
-### Examples
+### Examples Running
 ```bash
-%cd detection
-python runner.py --input_data_path="PE_INPUT/1-1_1.mp4" \
-    --guide_book_path="configs/mediapipe_pose_guide.json" \
-    --mm_model_path="config/weight/pose_landmarker_heavy.task" \
-    --detect_model_path="config/weight/mult_label_classifier.pth"
+chmod +x detection_run.sh
+./detection_run.sh
 ```
 
 ---

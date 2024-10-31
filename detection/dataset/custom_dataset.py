@@ -18,25 +18,39 @@ INFER_POSE_GUIDE = {
 }
 
 # %% 추론 데이터 로더 초기화 함수
-def infer_dataloader(data_path, type = 'binary_classification', seq_len = 600, infer_bs = 4, infer_worker = 4, random_seed = 42):
+def infer_dataloader(data_path = None, windows = None, type = 'binary_classification', seq_len = 600, infer_bs = 4, infer_worker = 4, random_seed = 42):
     if type == 'binary_classification':
-        infer_dataset = DK_Binary_Infer_Dataset(
-            data_path = data_path,
-            seq_length = seq_len,
-            standardize = True
-        )
+        if data_path is not None and windows is None:
+            infer_dataset = DK_Binary_Infer_Dataset(
+                data_path = data_path,
+                seq_length = seq_len,
+                standardize = True
+            )
+        else: # windowss is not None
+            infer_dataset = DK_Binary_Batch_Infer_Dataset(
+                windows = windows,
+                seq_length = seq_len,
+                standardize = True
+            )
     elif type == 'multi_classification':
-        infer_dataset = DK_Multi_Infer_Dataset(
-            data_path = data_path,
-            seq_length = seq_len,
-            standardize = True
-        )
+        if data_path is not None and windows is None:
+            infer_dataset = DK_Multi_Infer_Dataset(
+                data_path = data_path,
+                seq_length = seq_len,
+                standardize = True
+            )
+        else:
+            infer_dataset = DK_Multi_Batch_Infer_Dataset(
+                windows=windows,
+                seq_length = seq_len,
+                standardize = True
+            )
 
     infer_dataloader = DataLoader(
         infer_dataset,
         batch_size = infer_bs,
         shuffle = False,
-        drop_last = True,
+        drop_last = False,
         num_workers= infer_worker,
         pin_memory= True,
         worker_init_fn = lambda _: np.random.seed(random_seed)
@@ -64,6 +78,40 @@ class DK_Binary_Infer_Dataset(Dataset):
             padding_needed = seq_length - num_frames
             padded_sequence = np.pad(data_array, ((0, padding_needed), (0, 0)), mode='constant', constant_values=0)
             self.data.append(padded_sequence)
+
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, idx):
+        sample = self.data[idx]
+        
+        if self.transform:
+            sample = self.transform(sample)
+        
+        # PyTorch 텐서로 변환
+        sample = torch.tensor(sample, dtype=torch.float32)
+        label = torch.tensor(0, dtype=torch.long)
+        return sample, label
+
+class DK_Binary_Batch_Infer_Dataset(Dataset):
+    def __init__(self, windows, seq_length, transform=None, standardize=False):
+        self.windows = windows
+        self.seq_length = seq_length
+        self.transform = transform
+        self.standardize = standardize
+        self.scaler = StandardScaler() if standardize else None
+        self.data = []
+
+        for df in self.windows:
+            data_array = df.iloc[:, 0:].values
+            num_frames = len(data_array)
+            if num_frames >= seq_length:
+                for i in range(num_frames - seq_length + 1):
+                    self.data.append(data_array[i:i+seq_length])
+            else:
+                padding_needed = seq_length - num_frames
+                padded_sequence = np.pad(data_array, ((0, padding_needed), (0, 0)), mode='constant', constant_values=0)
+                self.data.append(padded_sequence)
 
     def __len__(self):
         return len(self.data)
@@ -113,8 +161,44 @@ class DK_Multi_Infer_Dataset(Dataset):
         sample = torch.tensor(sample, dtype=torch.float32)
         label = torch.tensor(0, dtype=torch.long)
         return sample, label
+class DK_Multi_Batch_Infer_Dataset(Dataset):
+    def __init__(self, windows, seq_length, transform=None, standardize=False):
+        self.seq_length = seq_length
+        self.transform = transform
+        self.standardize = standardize
+        self.scaler = StandardScaler() if standardize else None
+        self.data = []
         
+        for window in windows:
+            df= window
+            
+            data_array = df.iloc[:, 0:].values
+            num_frames = len(data_array)
+            if num_frames >= seq_length:
+                for i in range(num_frames - seq_length + 1):
+                    self.data.append(data_array[i:i+seq_length])
+            else:
+                padding_needed = seq_length - num_frames
+                padded_sequence = np.pad(data_array, ((0, padding_needed), (0, 0)), mode='constant', constant_values=0)
+                self.data.append(padded_sequence)
+        print("######## [Debug]", "DK_Multi_Batch_Infer_Dataset")
+        print("######## [Debug] len(windows)", len(windows))
+        print("######## [Debug] len(data)", len(self.data))
 
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, idx):
+        sample = self.data[idx]
+        
+        if self.transform:
+            sample = self.transform(sample)
+        
+        # PyTorch 텐서로 변환
+        sample = torch.tensor(sample, dtype=torch.float32)
+        label = torch.tensor(0, dtype=torch.long)
+        return sample, label
+        
 
 
 #%%  훈련/검증 데이터 로더 초기화 함수

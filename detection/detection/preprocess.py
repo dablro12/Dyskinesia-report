@@ -12,9 +12,15 @@ def data_postprocessor(vel_df, acc_df, coords_df_path, POSE_GUIDE):
     vel_acc_df = vel_acc_df[[col for col in vel_acc_df.columns if int(col.split('_')[0]) in POSE_GUIDE['foot_left'] + POSE_GUIDE['foot_right'] + POSE_GUIDE['arm_left'] + POSE_GUIDE['arm_right'] + POSE_GUIDE['lower_body_right'] + POSE_GUIDE['lower_body_left'] + POSE_GUIDE['upper_body_right'] + POSE_GUIDE['upper_body_left']]]
     vel_acc_df.to_csv(vel_acc_df_save_path, index=False)
     print("### [6] Data Postprocessing Complete : ", vel_acc_df_save_path)
+    
     return vel_acc_df_save_path
     
-
+def create_windows(df, window_size=600, stride=1):
+    windows = []
+    for start in range(0, len(df) - window_size + 1, stride):
+        end = start + window_size
+        windows.append(df.iloc[start:end])
+    return windows
 
 class data_preprocessor:
     def __init__(self, example_csv_path, guide_book_path, visualize_roi_name = 'Foot_Left', visualize_use = False, visualize_3d_use = False, visualize_save_dir = None):
@@ -62,7 +68,14 @@ class data_preprocessor:
         self.visualize_use = visualize_use
         self.visualize_3d_use= visualize_3d_use
         self.visualize_save_dir = visualize_save_dir
-    
+    def clean_df_outsocing(self, df:pd.DataFrame) -> pd.DataFrame:
+        # df의 각 row는 [x,y,z]로 되어 있음 column은 0~32 으로 되어 있음
+        # row에 있는 리스트를 분리해서 이를 0_x, 0_y, 0_z로 변경
+        df = df.applymap(lambda x: x.replace('[', '').replace(']', '').replace(' ', '').split(','))
+        df = df.applymap(lambda x: [float(i) for i in x])
+        df = df.applymap(lambda x: x[0] if len(x) == 1 else x)
+        return df
+
     # %% Data Preprocessing
     def preprocess_func(self, example_csv_path, guide_book_path, roi_name = 'Foot_Left', visualize_use = False, visualize_3d_use = False, visualize_save_dir = None):
         df = pd.read_csv(example_csv_path)
@@ -117,7 +130,6 @@ class data_preprocessor:
             # sampling_rate = 30 #샘플링 주파수 설정
             # plot_frequency_components(transformed_df['0_x'], transformed_df['0_y'], transformed_df['0_z'], sampling_rate, joint_name='Joint 0')
             # plot_frequency_components_without_dc(transformed_df['0_x'], transformed_df['0_y'], transformed_df['0_z'], sampling_rate, joint_name='Joint 0')
-
         return clean_df, velocity_df, acceleration_df, velocity_df_F, acceleration_df_F
     def run(self):
         self.df, self.velocity_df, self.acceleration_df, self.velocity_df_F, self.acceleration_df_F = self.preprocess_func(

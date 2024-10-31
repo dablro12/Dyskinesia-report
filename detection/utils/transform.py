@@ -37,19 +37,37 @@ def create_time_features(batch_size, seq_len):
 # x_mark_enc = create_time_features(batch_size, seq_len)
 
 # %% multi class 
+# def reshape_multi_tensor(data_loader):
+#     x_train_arr, y_train_arr = [], [] 
+#     for X, y in data_loader:
+#         X = X.view(-1, X.shape[-1])
+        
+#         x_train_arr.append(X)
+#         y_train_arr.append(y)
+#     print(x_train_arr.shape)
+#     x_train_arr = torch.cat(x_train_arr, dim=0)
+#     y_train_arr = torch.cat(y_train_arr, dim=0)
+    
+#     x_train_arr = x_train_arr.cpu().numpy()
+#     y_train_arr = y_train_arr.cpu().numpy()
+    
+#     return x_train_arr, y_train_arr
 def reshape_multi_tensor(data_loader):
     x_train_arr, y_train_arr = [], [] 
     for X, y in data_loader:
-        X = X.view(-1, X.shape[-1])
+        # X의 크기 확인
+        # X를 reshape하여 배치 크기와 시퀀스 길이를 유지
+        batch_size = X.shape[0]
+        X = X.view(batch_size * X.shape[1], X.shape[-1])  # (배치 크기 * 600, 96)
         
         x_train_arr.append(X)
         y_train_arr.append(y)
-    
+
+    # 각 배열을 concatenate
     x_train_arr = torch.cat(x_train_arr, dim=0)
     y_train_arr = torch.cat(y_train_arr, dim=0)
     
     x_train_arr = x_train_arr.cpu().numpy()
     y_train_arr = y_train_arr.cpu().numpy()
     
-    return x_train_arr, y_train_arr
-    
+    return x_train_arr, y_train_arr    
